@@ -19,6 +19,7 @@ import (
 
 	"k8s.io/heapster/common/flags"
 	"k8s.io/heapster/metrics/core"
+	"k8s.io/heapster/metrics/processors/caicloud"
 	"k8s.io/heapster/metrics/processors/kubeprocessors"
 )
 
@@ -29,6 +30,9 @@ func (this *ProcessorFactory) Build(uri flags.Uri) ([]core.DataProcessor, error)
 	switch uri.Key {
 	case "kubernetes":
 		processors, err := kubeprocessors.GetKubeProcessors(&uri.Val)
+		return processors, err
+	case "kubernetes.caicloud":
+		processors, err := caicloudprocessors.GetProcessors(&uri.Val)
 		return processors, err
 	default:
 		return nil, fmt.Errorf("Processor not recognized: %s", uri.Key)

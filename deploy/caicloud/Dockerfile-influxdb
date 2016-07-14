@@ -1,0 +1,17 @@
+FROM index.caicloud.io/caicloud/influxdb:1.0.0-beta2
+
+MAINTAINER liubog2008 "<liubo@caicloud.io>"
+
+# Install InfluxDB
+ENV INFLUXDB_VERSION v1.0.0-beta2
+
+ENV PATH=/opt/influxdb:$PATH
+
+ADD config.toml /etc/influxdb.toml
+
+# admin, http, udp, cluster, graphite, opentsdb, collectd
+EXPOSE 8083 8086 8086/udp 8088 2003 4242 25826
+
+VOLUME ["/data"]
+
+ENTRYPOINT ["influxd", "--config", "/etc/influxdb.toml"]

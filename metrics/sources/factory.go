@@ -34,6 +34,9 @@ func (this *SourceFactory) Build(uri flags.Uri) (core.MetricsSourceProvider, err
 	case "kubernetes.summary_api":
 		provider, err := summary.NewSummaryProvider(&uri.Val)
 		return provider, err
+	case "kubernetes.caicloud":
+		provider, err := summary.NewSummaryProvider(&uri.Val)
+		return provider, err
 	default:
 		return nil, fmt.Errorf("Source not recognized: %s", uri.Key)
 	}

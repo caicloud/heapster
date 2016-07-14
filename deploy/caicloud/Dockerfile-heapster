@@ -1,0 +1,5 @@
+FROM index.caicloud.io/caicloud/golang:1.6
+
+COPY heapster /heapster
+
+CMD ["/heapster"]
