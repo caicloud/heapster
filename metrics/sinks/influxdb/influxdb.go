@@ -43,6 +43,8 @@ const (
 
 	// Maximum number of influxdb Points to be sent in one batch.
 	maxSendBatchSize = 10000
+
+	defaultRetentionPolicy = "autogen"
 )
 
 func (sink *influxdbSink) resetConnection() {
@@ -153,7 +155,7 @@ func (sink *influxdbSink) sendData(dataPoints []influxdb.Point) {
 	bp := influxdb.BatchPoints{
 		Points:          dataPoints,
 		Database:        sink.c.DbName,
-		RetentionPolicy: "default",
+		RetentionPolicy: defaultRetentionPolicy,
 	}
 
 	start := time.Now()
