@@ -12,3 +12,35 @@ var (
 )
 
 const UNLIMIT int64 = -1
+
+var MetricCpuAvailable = core.Metric{
+	MetricDescriptor: core.MetricDescriptor{
+		Name:        "cpu/available",
+		Description: "CPU available in millicores.",
+		Type:        core.MetricGauge,
+		ValueType:   core.ValueInt64,
+		Units:       core.UnitsCount,
+	},
+}
+
+var MetricMemoryAvailable = core.Metric{
+	MetricDescriptor: core.MetricDescriptor{
+		Name:        "memory/available",
+		Description: "Memory available in bytes. This metric is not equal limit - usage.",
+		Type:        core.MetricGauge,
+		ValueType:   core.ValueInt64,
+		Units:       core.UnitsBytes,
+	},
+}
+
+var AdditionalMetrics = []core.Metric{
+	core.MetricCpuRequest,
+	core.MetricCpuLimit,
+	MetricCpuAvailable,
+	core.MetricMemoryRequest,
+	core.MetricMemoryLimit,
+	MetricMemoryAvailable,
+}
+
+var AllMetrics = append(append(append(append(core.StandardMetrics, AdditionalMetrics...), core.RateMetrics...), core.LabeledMetrics...),
+	core.NodeAutoscalingMetrics...)

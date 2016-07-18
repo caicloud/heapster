@@ -12,17 +12,6 @@ func GetProcessors(url *url.URL) ([]core.DataProcessor, error) {
 	metricsToAggregate := []string{
 		core.MetricCpuUsageRate.Name,
 		core.MetricMemoryUsage.Name,
-		core.MetricCpuRequest.Name,
-		core.MetricCpuLimit.Name,
-		core.MetricMemoryRequest.Name,
-		core.MetricMemoryLimit.Name,
-	}
-
-	metricsToAggregateForNode := []string{
-		core.MetricCpuRequest.Name,
-		core.MetricCpuLimit.Name,
-		core.MetricMemoryRequest.Name,
-		core.MetricMemoryLimit.Name,
 	}
 
 	dataProcessors := []core.DataProcessor{
@@ -35,14 +24,21 @@ func GetProcessors(url *url.URL) ([]core.DataProcessor, error) {
 		glog.Fatalf("Failed to create PodBasedEnricher: %v", err)
 		return nil, err
 	}
+	dataProcessors = append(dataProcessors, podBasedEnricher)
+
 	namespaceBasedEnricher, err := NewNamespaceBasedEnricher(url)
 	if err != nil {
 		glog.Fatalf("Failed to create NamespaceBasedEnricher: %v", err)
 		return nil, err
 	}
-
-	dataProcessors = append(dataProcessors, podBasedEnricher)
 	dataProcessors = append(dataProcessors, namespaceBasedEnricher)
+
+	nodeBasedEnricher, err := NewNodeBasedEnricher(url)
+	if err != nil {
+		glog.Fatalf("Failed to create NodeBasedEnricher: %v", err)
+		return nil, err
+	}
+	dataProcessors = append(dataProcessors, nodeBasedEnricher)
 
 	dataProcessors = append(dataProcessors,
 		&PodAggregator{
@@ -55,6 +51,7 @@ func GetProcessors(url *url.URL) ([]core.DataProcessor, error) {
 				core.MetricMemoryMajorPageFaultsRate.Name,
 
 				core.MetricFilesystemUsage.Name,
+				core.MetricFilesystemAvailable.Name,
 
 				core.MetricNetworkRxRate.Name,
 				core.MetricNetworkTxRate.Name,
@@ -72,9 +69,6 @@ func GetProcessors(url *url.URL) ([]core.DataProcessor, error) {
 		},
 		&kubeprocessors.NamespaceAggregator{
 			MetricsToAggregate: metricsToAggregate,
-		},
-		&kubeprocessors.NodeAggregator{
-			MetricsToAggregate: metricsToAggregateForNode,
 		},
 	)
 
