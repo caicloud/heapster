@@ -57,7 +57,7 @@ func (n *NamespaceBasedEnricher) addNamespaceInfo(metricSet *core.MetricSet, rl 
 					metricSet.Labels[core.LabelPodNamespaceUID.Key] = string(namespace.UID)
 					if metricSetType == core.MetricSetTypeNamespace {
 						if resourceList, found := rl[namespaceName]; found {
-							for key, name := range requestAndLimit {
+							for key, metirc := range requestAndLimit {
 								if val, found := resourceList[key]; found {
 									var v int64
 									switch key {
@@ -70,10 +70,10 @@ func (n *NamespaceBasedEnricher) addNamespaceInfo(metricSet *core.MetricSet, rl 
 									case kubeapi.ResourceLimitsMemory:
 										v = val.Value()
 									}
-									glog.V(3).Infof("add namespace %v quota info, %v: %v", namespaceName, name, v)
-									metricSet.MetricValues[name] = intValue(v)
+									glog.V(3).Infof("add namespace %v quota info, %v: %v", namespaceName, metirc, v)
+									metricSet.MetricValues[metirc] = intValue(v)
 								} else {
-									metricSet.MetricValues[name] = intValue(caicloudcore.UNLIMIT)
+									metricSet.MetricValues[metirc] = intValue(caicloudcore.UNLIMIT)
 								}
 							}
 						} else {

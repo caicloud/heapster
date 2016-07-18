@@ -40,3 +40,21 @@ func intValue(value int64) core.MetricValue {
 		ValueType:  core.ValueInt64,
 	}
 }
+
+// a < b,  return true
+// a >= b, return false
+func less(a *core.MetricValue, b *core.MetricValue) bool {
+	if a.ValueType == core.ValueInt64 {
+		if b.ValueType == core.ValueInt64 {
+			return a.IntValue < b.IntValue
+		} else {
+			return float64(a.IntValue) < float64(b.FloatValue)
+		}
+	} else {
+		if b.ValueType == core.ValueInt64 {
+			return float64(a.FloatValue) < float64(b.IntValue)
+		} else {
+			return a.FloatValue < b.FloatValue
+		}
+	}
+}
