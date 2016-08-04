@@ -49,10 +49,13 @@ func (p *PodAggregator) Process(batch *core.DataBatch) (*core.DataBatch, error) 
 }
 
 var labelsToPopulate = []core.LabelDescriptor{
-	core.LabelPodName,
-	caicloudcore.LabelAppName,
 	core.LabelNamespaceName,
+	core.LabelPodNamespace,
+	caicloudcore.LabelAppName,
+	core.LabelPodName,
+	core.LabelNodename,
 	core.LabelHostname,
+	core.LabelHostID,
 }
 
 func podMetricSet(labels map[string]string) *core.MetricSet {
