@@ -5,13 +5,38 @@ import (
 
 	"github.com/golang/glog"
 	"k8s.io/heapster/metrics/core"
+	"k8s.io/heapster/metrics/core/caicloud"
 	"k8s.io/heapster/metrics/processors/kubeprocessors"
 )
 
 func GetProcessors(url *url.URL) ([]core.DataProcessor, error) {
-	metricsToAggregate := []string{
+	nsAndAppMetricsToAggregate := []string{
 		core.MetricCpuUsageRate.Name,
+
 		core.MetricMemoryUsage.Name,
+		core.MetricMemoryWorkingSet.Name,
+		core.MetricMemoryPageFaultsRate.Name,
+		core.MetricMemoryMajorPageFaultsRate.Name,
+
+		core.MetricFilesystemUsage.Name,
+
+		core.MetricNetworkRxRate.Name,
+		core.MetricNetworkTxRate.Name,
+		core.MetricNetworkRxErrorsRate.Name,
+		core.MetricNetworkTxErrorsRate.Name,
+	}
+	clusterMetricsToAggregate := []string{
+		core.MetricCpuUsageRate.Name,
+		core.MetricCpuLimit.Name,
+		caicloudcore.MetricCpuAvailable.Name,
+
+		core.MetricMemoryUsage.Name,
+		core.MetricMemoryLimit.Name,
+		caicloudcore.MetricMemoryAvailable.Name,
+
+		core.MetricFilesystemUsage.Name,
+		core.MetricFilesystemLimit.Name,
+		core.MetricFilesystemAvailable.Name,
 	}
 
 	dataProcessors := []core.DataProcessor{
@@ -32,13 +57,6 @@ func GetProcessors(url *url.URL) ([]core.DataProcessor, error) {
 		return nil, err
 	}
 	dataProcessors = append(dataProcessors, namespaceBasedEnricher)
-
-	nodeBasedEnricher, err := NewNodeBasedEnricher(url)
-	if err != nil {
-		glog.Fatalf("Failed to create NodeBasedEnricher: %v", err)
-		return nil, err
-	}
-	dataProcessors = append(dataProcessors, nodeBasedEnricher)
 
 	dataProcessors = append(dataProcessors,
 		&PodAggregator{
@@ -65,10 +83,13 @@ func GetProcessors(url *url.URL) ([]core.DataProcessor, error) {
 			},
 		},
 		&ApplicationAggregator{
-			MetricsToAggregate: metricsToAggregate,
+			MetricsToAggregate: nsAndAppMetricsToAggregate,
 		},
 		&kubeprocessors.NamespaceAggregator{
-			MetricsToAggregate: metricsToAggregate,
+			MetricsToAggregate: nsAndAppMetricsToAggregate,
+		},
+		&ClusterAggregator{
+			MetricsToAggregate: clusterMetricsToAggregate,
 		},
 	)
 

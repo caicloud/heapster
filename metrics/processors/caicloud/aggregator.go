@@ -6,6 +6,77 @@ import (
 	"k8s.io/heapster/metrics/core"
 )
 
+func aggregateRootMetric(src, dst *core.MetricSet, metricsToAggregate map[string]bool) error {
+	const rootKey = "/"
+	const logsKey = "logs"
+	rootMetric := make(map[string]core.MetricValue)
+	logsMetric := make(map[string]core.MetricValue)
+	for _, labeledMetric := range dst.LabeledMetrics {
+		if metricsToAggregate[labeledMetric.Name] {
+			if fsKey, ok := labeledMetric.Labels[core.LabelResourceID.Key]; ok {
+				if fsKey == rootKey {
+					rootMetric[labeledMetric.Name] = labeledMetric.MetricValue
+				} else if fsKey == logsKey {
+					logsMetric[labeledMetric.Name] = labeledMetric.MetricValue
+				}
+			}
+		}
+	}
+	for _, labeledMetric := range src.LabeledMetrics {
+		if metricsToAggregate[labeledMetric.Name] {
+			// TODO(liubog2008): aggregate volume resource
+			if v, ok := labeledMetric.Labels[core.LabelResourceID.Key]; ok {
+				var aggregatedMetric map[string]core.MetricValue
+				if v == rootKey {
+					aggregatedMetric = rootMetric
+				} else if v == logsKey {
+					aggregatedMetric = logsMetric
+				} else {
+					continue
+				}
+				if metric, ok := aggregatedMetric[labeledMetric.Name]; ok {
+					if metric.ValueType != labeledMetric.MetricValue.ValueType {
+						return fmt.Errorf("Aggregator: type not supported in %s", labeledMetric.Name)
+					}
+					if metric.ValueType == core.ValueInt64 {
+						metric.IntValue += labeledMetric.MetricValue.IntValue
+					} else if metric.ValueType == core.ValueFloat {
+						metric.FloatValue += labeledMetric.MetricValue.FloatValue
+					} else {
+						return fmt.Errorf("Aggregator: type not supported in %s", labeledMetric.Name)
+					}
+					aggregatedMetric[labeledMetric.Name] = metric
+				} else {
+					aggregatedMetric[labeledMetric.Name] = labeledMetric.MetricValue
+				}
+			}
+		}
+	}
+	rootLabels := map[string]string{core.LabelResourceID.Key: rootKey}
+	logsLabels := map[string]string{core.LabelResourceID.Key: logsKey}
+	for name, metricValue := range rootMetric {
+		dst.LabeledMetrics = append(dst.LabeledMetrics, core.LabeledMetric{
+			Name:        name,
+			Labels:      rootLabels,
+			MetricValue: metricValue,
+		})
+	}
+	for name, metricValue := range logsMetric {
+		dst.LabeledMetrics = append(dst.LabeledMetrics, core.LabeledMetric{
+			Name:        name,
+			Labels:      logsLabels,
+			MetricValue: metricValue,
+		})
+	}
+	return nil
+}
+
+var labeledMetricsName = map[string]bool{
+	core.MetricFilesystemUsage.Name:     true,
+	core.MetricFilesystemLimit.Name:     true,
+	core.MetricFilesystemAvailable.Name: true,
+}
+
 func Aggregate(src, dst *core.MetricSet, metricsToAggregate []string) error {
 	for _, metricName := range metricsToAggregate {
 		metricValue, found := src.MetricValues[metricName]
@@ -30,7 +101,13 @@ func Aggregate(src, dst *core.MetricSet, metricsToAggregate []string) error {
 		}
 		dst.MetricValues[metricName] = aggregatedValue
 	}
-	return nil
+	labeledMetricNameExist := map[string]bool{}
+	for _, metricName := range metricsToAggregate {
+		if labeledMetricsName[metricName] {
+			labeledMetricNameExist[metricName] = true
+		}
+	}
+	return aggregateRootMetric(src, dst, labeledMetricNameExist)
 }
 
 func intValue(value int64) core.MetricValue {

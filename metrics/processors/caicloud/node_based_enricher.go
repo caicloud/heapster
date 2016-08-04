@@ -58,8 +58,6 @@ func (n *NodeBasedEnricher) Process(batch *core.DataBatch) (*core.DataBatch, err
 				memoryLimit := metricSet.MetricValues[core.MetricMemoryLimit.Name]
 				metricSet.MetricValues[caicloudcore.MetricMemoryAvailable.Name] = intValue(memoryLimit.IntValue - memoryUsage.IntValue)
 			}
-		} else {
-			glog.Errorf("can't get metric set type: %v", metricSet.Labels)
 		}
 	}
 	for k, v := range nodes {

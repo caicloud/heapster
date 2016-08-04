@@ -7,6 +7,7 @@ import (
 
 	"github.com/golang/glog"
 	. "k8s.io/heapster/metrics/core"
+	"k8s.io/heapster/metrics/core/caicloud"
 	"k8s.io/heapster/metrics/sources/kubelet"
 	"k8s.io/heapster/metrics/sources/summary"
 	kubeapi "k8s.io/kubernetes/pkg/api"
@@ -16,17 +17,22 @@ import (
 )
 
 type caicloudMetricsSource struct {
-	node          summary.NodeInfo
+	node          NodeInfo
 	summary       MetricsSource
 	kubeletClient *kubelet.KubeletClient
 }
 
-func NewCaicloudMetricsSource(node summary.NodeInfo, client *kubelet.KubeletClient, summary MetricsSource) MetricsSource {
+func NewCaicloudMetricsSource(node NodeInfo, client *kubelet.KubeletClient, summary MetricsSource) MetricsSource {
 	return &caicloudMetricsSource{
 		node:          node,
 		summary:       summary,
 		kubeletClient: client,
 	}
+}
+
+type NodeInfo struct {
+	summary.NodeInfo
+	Unschedulable bool
 }
 
 func (s *caicloudMetricsSource) Name() string {
@@ -46,6 +52,38 @@ func (s *caicloudMetricsSource) ScrapeMetrics(start, end time.Time) *DataBatch {
 
 		s.addIntMetric(metricSet, &MetricCpuLimit, cpuLimit)
 		s.addIntMetric(metricSet, &MetricMemoryLimit, machineInfo.MemoryCapacity)
+		if s.node.Unschedulable {
+			s.addIntMetric(metricSet, &caicloudcore.MetricCpuAvailable, 0)
+			s.addIntMetric(metricSet, &caicloudcore.MetricMemoryAvailable, 0)
+			flag := false
+			for idx, labeledMetric := range metricSet.LabeledMetrics {
+				if labeledMetric.Name == MetricFilesystemAvailable.Name {
+					labeledMetric.MetricValue.IntValue = 0
+					metricSet.LabeledMetrics[idx] = labeledMetric
+					flag = true
+					break
+				}
+			}
+			if !flag {
+				metricSet.LabeledMetrics = append(metricSet.LabeledMetrics,
+					LabeledMetric{
+						Name:   MetricFilesystemAvailable.Name,
+						Labels: map[string]string{LabelResourceID.Key: "/"},
+						MetricValue: MetricValue{
+							ValueType:  ValueInt64,
+							MetricType: MetricFilesystemAvailable.Type,
+							IntValue:   0,
+						},
+					})
+			}
+		} else {
+			cpuUsageRate := metricSet.MetricValues[MetricCpuUsageRate.Name]
+			cpuLimit := metricSet.MetricValues[MetricCpuLimit.Name]
+			s.addIntMetric(metricSet, &caicloudcore.MetricCpuAvailable, cpuLimit.IntValue-cpuUsageRate.IntValue)
+			memoryUsage := metricSet.MetricValues[MetricMemoryUsage.Name]
+			memoryLimit := metricSet.MetricValues[MetricMemoryLimit.Name]
+			s.addIntMetric(metricSet, &caicloudcore.MetricMemoryAvailable, memoryLimit.IntValue-memoryUsage.IntValue)
+		}
 	}
 	return dataBatch
 }
@@ -65,20 +103,24 @@ type caicloudProvider struct {
 	kubeletClient *kubelet.KubeletClient
 }
 
-func (p *caicloudProvider) getNodeInfo(node *kubeapi.Node) (summary.NodeInfo, error) {
+func (p *caicloudProvider) getNodeInfo(node *kubeapi.Node) (NodeInfo, error) {
 	for _, c := range node.Status.Conditions {
 		if c.Type == kubeapi.NodeReady && c.Status != kubeapi.ConditionTrue {
-			return summary.NodeInfo{}, fmt.Errorf("Node %v is not ready", node.Name)
+			return NodeInfo{}, fmt.Errorf("Node %v is not ready", node.Name)
 		}
 	}
-	info := summary.NodeInfo{
-		NodeName: node.Name,
-		HostName: node.Name,
-		HostID:   node.Spec.ExternalID,
-		Host: kubelet.Host{
-			Port: p.kubeletClient.GetPort(),
+	info := NodeInfo{
+		summary.NodeInfo{
+			NodeName: node.Name,
+			HostName: node.Name,
+			HostID:   node.Spec.ExternalID,
+			Host: kubelet.Host{
+				Port: p.kubeletClient.GetPort(),
+			},
+			// hack for enable summay api
+			KubeletVersion: "v1.2.4",
 		},
-		KubeletVersion: node.Status.NodeInfo.KubeletVersion,
+		node.Spec.Unschedulable,
 	}
 
 	for _, addr := range node.Status.Addresses {
@@ -125,7 +167,7 @@ func (p *caicloudProvider) GetMetricsSources() []MetricsSource {
 			info.HostName,
 			info.HostID,
 		)
-		summary := summary.NewSummaryMetricsSource(info, p.kubeletClient, fallback)
+		summary := summary.NewSummaryMetricsSource(info.NodeInfo, p.kubeletClient, fallback)
 		sources = append(sources, NewCaicloudMetricsSource(info, p.kubeletClient, summary))
 	}
 	return sources
