@@ -19,6 +19,7 @@ import (
 
 	"k8s.io/heapster/common/flags"
 	"k8s.io/heapster/metrics/core"
+	"k8s.io/heapster/metrics/sources/caicloud"
 	"k8s.io/heapster/metrics/sources/kubelet"
 	"k8s.io/heapster/metrics/sources/summary"
 )
@@ -35,7 +36,7 @@ func (this *SourceFactory) Build(uri flags.Uri) (core.MetricsSourceProvider, err
 		provider, err := summary.NewSummaryProvider(&uri.Val)
 		return provider, err
 	case "kubernetes.caicloud":
-		provider, err := summary.NewSummaryProvider(&uri.Val)
+		provider, err := caicloudsource.NewCaicloudProvider(&uri.Val)
 		return provider, err
 	default:
 		return nil, fmt.Errorf("Source not recognized: %s", uri.Key)

@@ -85,7 +85,7 @@ func changeContainerInfo(key string, containerMs *core.MetricSet, pod *kubeapi.P
 	appName := getApplicationName(pod)
 
 	for _, container := range pod.Spec.Containers {
-		if key == caicloudcore.PodContainerKey(pod.Namespace, appName, pod.Name, container.Name) {
+		if key == core.PodContainerKey(pod.Namespace, pod.Name, container.Name) {
 			updateContainerResourcesAndLimits(containerMs, &container)
 			if _, ok := containerMs.Labels[core.LabelContainerBaseImage.Key]; !ok {
 				containerMs.Labels[core.LabelContainerBaseImage.Key] = container.Image
@@ -100,7 +100,7 @@ func changeContainerInfo(key string, containerMs *core.MetricSet, pod *kubeapi.P
 	namespaceName := containerMs.Labels[core.LabelNamespaceName.Key]
 	podName := containerMs.Labels[core.LabelPodName.Key]
 
-	podKey := caicloudcore.PodKey(namespaceName, appName, podName)
+	podKey := core.PodKey(namespaceName, podName)
 	_, oldfound := batch.MetricSets[podKey]
 	if !oldfound {
 		_, newfound := newMs[podKey]
@@ -134,7 +134,7 @@ func changePodInfo(key string, podMs *core.MetricSet, pod *kubeapi.Pod, batch *c
 
 	// Add cpu/mem requests and limits to containers
 	for _, container := range pod.Spec.Containers {
-		containerKey := caicloudcore.PodContainerKey(pod.Namespace, appName, pod.Name, container.Name)
+		containerKey := core.PodContainerKey(pod.Namespace, pod.Name, container.Name)
 		if _, found := batch.MetricSets[containerKey]; !found {
 			if _, found := newMs[containerKey]; !found {
 				glog.V(2).Infof("Container %s not found, creating a stub", containerKey)
