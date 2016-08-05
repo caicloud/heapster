@@ -128,6 +128,30 @@ func (self *KubeletClient) GetAllRawContainers(host Host, start, end time.Time) 
 	return self.getAllContainers(url, start, end)
 }
 
+func (self *KubeletClient) GetMachineInfo(host Host) (*cadvisor.MachineInfo, error) {
+	url := url.URL{
+		Scheme: "http",
+		Host:   fmt.Sprintf("%s:%d", host.IP, host.Port),
+		Path:   "/spec/",
+	}
+	if self.config != nil && self.config.EnableHttps {
+		url.Scheme = "https"
+	}
+
+	req, err := http.NewRequest("GET", url.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+	machineInfo := &cadvisor.MachineInfo{}
+	client := self.client
+	if client == nil {
+		client = http.DefaultClient
+	}
+	err = self.postRequestAndGetValue(client, req, machineInfo)
+	return machineInfo, err
+
+}
+
 func (self *KubeletClient) GetSummary(host Host) (*stats.Summary, error) {
 	url := url.URL{
 		Scheme: "http",

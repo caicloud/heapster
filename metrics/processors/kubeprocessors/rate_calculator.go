@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package processors
+package kubeprocessors
 
 import (
 	"k8s.io/heapster/metrics/core"
@@ -61,6 +61,9 @@ func (this *RateCalculator) Process(batch *core.DataBatch) (*core.DataBatch, err
 						// cpu/usage values are in nanoseconds; we want to have it in millicores (that's why constant 1000 is here).
 						newVal := 1000 * (metricValNew.IntValue - metricValOld.IntValue) /
 							(newMs.ScrapeTime.UnixNano() - oldMs.ScrapeTime.UnixNano())
+						if newVal < 0 {
+							newVal = 0
+						}
 
 						newMs.MetricValues[targetMetric.MetricDescriptor.Name] = core.MetricValue{
 							ValueType:  core.ValueInt64,
@@ -71,6 +74,9 @@ func (this *RateCalculator) Process(batch *core.DataBatch) (*core.DataBatch, err
 					} else if targetMetric.MetricDescriptor.ValueType == core.ValueFloat {
 						newVal := 1e9 * float32(metricValNew.IntValue-metricValOld.IntValue) /
 							float32(newMs.ScrapeTime.UnixNano()-oldMs.ScrapeTime.UnixNano())
+						if newVal < 0 {
+							newVal = 0
+						}
 
 						newMs.MetricValues[targetMetric.MetricDescriptor.Name] = core.MetricValue{
 							ValueType:  core.ValueFloat,

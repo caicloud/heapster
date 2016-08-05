@@ -1,0 +1,43 @@
+apiVersion: v1
+items:
+- apiVersion: extensions/v1beta1
+  kind: ReplicaSet
+  metadata:
+    labels:
+      kubernetes-admin.caicloud.io/application: aaa
+      kubernetes-admin.caicloud.io/type: application
+    name: aaa
+    namespace: test
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        kubernetes-admin.caicloud.io/application: aaa
+        kubernetes-admin.caicloud.io/type: application
+    template:
+      metadata:
+        creationTimestamp: null
+        labels:
+          kubernetes-admin.caicloud.io/application: aaa
+          kubernetes-admin.caicloud.io/type: application
+      spec:
+        containers:
+        - image: index.caicloud.io/caicloud/monitoring-cpu-test:v0.0.3
+          imagePullPolicy: IfNotPresent
+          name: test
+          resources:
+            requests:
+              cpu: 10m
+              memory: 50Mi
+          securityContext: {}
+          terminationMessagePath: /dev/termination-log
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    fullyLabeledReplicas: 1
+    observedGeneration: 3
+    replicas: 1
+kind: List
+metadata: {}
