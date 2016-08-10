@@ -9,14 +9,6 @@ import (
 // anytime. It it only guaranteed that it is unique for the unique combination of
 // passed parameters.
 
-func PodContainerKey(namespaceName, appName, podName, containerName string) string {
-	return fmt.Sprintf("namespace:%s/app:%s/pod:%s/container:%s", namespaceName, appName, podName, containerName)
-}
-
-func PodKey(namespaceName, appName, podName string) string {
-	return fmt.Sprintf("namespace:%s/app:%s/pod:%s", namespaceName, appName, podName)
-}
-
 func AppKey(namespaceName, appName string) string {
 	return fmt.Sprintf("namespace:%s/app:%s", namespaceName, appName)
 }
