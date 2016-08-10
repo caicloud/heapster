@@ -21,10 +21,10 @@ func (p *PodAggregator) Process(batch *core.DataBatch) (*core.DataBatch, error) 
 
 		if metricSetType, found := metricSet.Labels[core.LabelMetricSetType.Key]; found && metricSetType == core.MetricSetTypePodContainer {
 			podName, found := metricSet.Labels[core.LabelPodName.Key]
-			appName, found2 := metricSet.Labels[caicloudcore.LabelAppName.Key]
+			_, found2 := metricSet.Labels[caicloudcore.LabelAppName.Key]
 			namespaceName, found3 := metricSet.Labels[core.LabelNamespaceName.Key]
 			if found && found2 && found3 {
-				podKey := caicloudcore.PodKey(namespaceName, appName, podName)
+				podKey := core.PodKey(namespaceName, podName)
 				pod, found := pods[podKey]
 				if !found {
 					if podFromBatch, found := batch.MetricSets[podKey]; found {
