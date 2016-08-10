@@ -93,5 +93,12 @@ func GetProcessors(url *url.URL) ([]core.DataProcessor, error) {
 		},
 	)
 
+	nodeAutoscalingEnricher, err := kubeprocessors.NewNodeAutoscalingEnricher(url)
+	if err != nil {
+		glog.Fatalf("Failed to create NodeAutoscalingEnricher: %v", err)
+		return nil, err
+	}
+	dataProcessors = append(dataProcessors, nodeAutoscalingEnricher)
+
 	return dataProcessors, nil
 }
