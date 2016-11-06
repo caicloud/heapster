@@ -51,7 +51,7 @@ func (s *caicloudMetricsSource) ScrapeMetrics(start, end time.Time) *DataBatch {
 		var cpuLimit int64 = int64(machineInfo.NumCores) * 1000
 
 		s.addIntMetric(metricSet, &MetricCpuLimit, cpuLimit)
-		s.addIntMetric(metricSet, &MetricMemoryLimit, machineInfo.MemoryCapacity)
+		s.addIntMetric(metricSet, &MetricMemoryLimit, int64(machineInfo.MemoryCapacity))
 		if s.node.Unschedulable {
 			s.addIntMetric(metricSet, &caicloudcore.MetricCpuAvailable, 0)
 			s.addIntMetric(metricSet, &caicloudcore.MetricMemoryAvailable, 0)
