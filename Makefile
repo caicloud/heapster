@@ -2,17 +2,31 @@ all: build
 
 TAG = v1.2.0
 PREFIX = gcr.io/google_containers
-FLAGS = 
+FLAGS =
 
 SUPPORTED_KUBE_VERSIONS = "1.3.6"
 TEST_NAMESPACE = heapster-e2e-tests
 
-deps:
-	which godep || go get github.com/tools/godep
+build: clean
+	docker run --rm                                                        \
+		-v ${PWD}:/go/src/k8s.io/heapster                                  \
+		-w /go/src/k8s.io/heapster                                         \
+		-e GOOS=linux                                                      \
+		-e GOARCH=amd64													   \
+		-e CGO_ENABLED=0                                                   \
+		-e GOPATH=/go                                                      \
+		cargo.caicloudprivatetest.com/caicloud/golang:1.9.2-alpine3.6      \
+			go build -i -v -o heapster ./metrics
 
-build: clean deps
-	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 godep go build -o heapster k8s.io/heapster/metrics
-	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 godep go build -o eventer k8s.io/heapster/events
+	docker run --rm                                                        \
+		-v ${PWD}:/go/src/k8s.io/heapster                                  \
+		-w /go/src/k8s.io/heapster                                         \
+		-e GOOS=linux                                                      \
+		-e GOARCH=amd64													   \
+		-e CGO_ENABLED=0                                                   \
+		-e GOPATH=/go                                                      \
+		cargo.caicloudprivatetest.com/caicloud/golang:1.9.2-alpine3.6      \
+			go build -i -v -o eventer ./events
 
 sanitize:
 	hooks/check_boilerplate.sh
